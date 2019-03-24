@@ -1,0 +1,7 @@
+#!/bin/sh
+
+stty raw
+/usr/local/bin/BlueTerminal
+stty -raw
+
+exit 0
