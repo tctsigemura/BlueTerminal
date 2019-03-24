@@ -72,6 +72,7 @@
 				A54467E32247AE8200ADDB29 /* Sources */,
 				A54467E42247AE8200ADDB29 /* Frameworks */,
 				A54467E52247AE8200ADDB29 /* CopyFiles */,
+				A54467F12247B79900ADDB29 /* Run Script */,
 			);
 			buildRules = (
 			);
@@ -113,6 +114,27 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A54467F12247B79900ADDB29 /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 12;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp -a \"${BUILT_PRODUCTS_DIR}/\" \"${SRCROOT}/bin/\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A54467E32247AE8200ADDB29 /* Sources */ = {
