@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		A54467E72247AE8200ADDB29 /* BlueTerminal */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = BlueTerminal; sourceTree = BUILT_PRODUCTS_DIR; };
 		A54467EA2247AE8200ADDB29 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A5D4E0092247BD9B00823169 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +42,7 @@
 		A54467DE2247AE8200ADDB29 = {
 			isa = PBXGroup;
 			children = (
+				A5D4E0092247BD9B00823169 /* README.md */,
 				A54467E92247AE8200ADDB29 /* BlueTerminal */,
 				A54467E82247AE8200ADDB29 /* Products */,
 			);
