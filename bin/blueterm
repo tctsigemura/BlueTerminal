@@ -1,7 +1,28 @@
 #!/bin/sh
 
-stty raw
-/usr/local/bin/BlueTerminal
-stty -raw
+myname=`basename $0`
 
+case "$1" in
+-*) echo "使い方: ${myname} [-h] [名前]"
+    echo "        [名前]はTeCにつけてある8文字以内の名前です．"
+    echo "        [名前]が不明の場合は[名前]を省略して${myname}を起動します．"
+    echo "        [名前]が省略されると${myname}は周辺のTeCをスキャンします．"
+    echo "        その場合は，番号でTeCを選択することができます．"
+    exit 1;;
+esac
+
+if [ $# -le 0 ]; then
+    echo "周辺のTeCをスキャンします．"
+    echo "接続するTeCを番号で選択して下さい．"
+    stty raw
+    /usr/local/bin/BlueTerminal
+    stty -raw
+else
+    echo "\"$1\"と名付けられたTeCに接続します．"
+    stty raw
+    /usr/local/bin/BlueTerminal "$1"
+    stty -raw
+fi
+
+echo "${myname}を終了します．"
 exit 0
