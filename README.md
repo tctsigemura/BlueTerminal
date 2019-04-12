@@ -15,7 +15,7 @@ RN4020がシリアル通信でコントロールできなくなった場合に�
 3. 電源を切断する．
 
 ## RN4020 初期設定（スクリプト使用の場合）
-1. TeC7bのジャンパをDEMO1に設定し，MacとUSBケーブルで接続する．　　
+1. TeC7のジャンパをDEMO1に設定し，MacとUSBケーブルで接続する．　　
 2. setupRN4020.sh を実行する
 <pre>
 $ ./setuRN4020.sh
@@ -25,10 +25,10 @@ $                                           // 設定完了
 </pre>
 
 ## RN4020 初期設定（手動の場合）
-1. CoolTermをインストルする．
-2. TeC7bのジャンパをDEMO1に設定し，MacとUSBケーブルで接続する．　　
+1. CoolTermをインストルする．（screenコマンドが使用できる人は不要）
+2. TeC7のジャンパをDEMO1に設定し，MacとUSBケーブルで接続する．　　
 3. CoolTermを起動し，以下のように設定する．
-  <pre>  [options] → [Serial Port] → [Port] → TeC7bを接続しているUSB Serialポートを選択
+  <pre>  [options] → [Serial Port] → [Port] → TeC7を接続しているUSB Serialポートを選択
   [options] → [Terminal] → [Enter Key Emulation] → CRを選択 </pre>
 4. CoolTermに'+'とEnterキーを入力する．Echo Onと出力されれば，接続成功．
 5. CoolTermに以下のコマンドを打ち込む．
