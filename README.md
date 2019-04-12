@@ -66,7 +66,7 @@ $ blueterm                                 // 起動する
 ### 接続先を名前で指定する場合
 <pre>
 $ blueterm MyName                          // 起動する
-"sigemura"と名付けられたTeCに接続します．
+"MyName"と名付けられたTeCに接続します．
 ~. : プログラム終了                        // 接続完了
 </pre>
 
