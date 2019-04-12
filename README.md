@@ -1,8 +1,12 @@
-# BluetoothTerminal
+# BlueTerminal
 TeC7b以降に搭載されたMicrochip社のRN4020 Bluetooth Low Energy Moduleと
 MLDP(Microchip Low Energy Data Profile)を使用して通信するmacOS用のプログラム．
+RN4020（MLDP）用の一般的な通信ソフトとしても使用できる．
+（TeCに接続完了と切断を知らせる文字列が勝手に送信される．
+都合が悪い場合はプログラムを改造する必要がある．）
 
-## RN4020 初期化
+
+## RN4020 初期化（制御不能になった場合のみ）
 TeC7b(Tokuyama Educational Computer Ver.7b)以降に搭載されたRN4020は，
 次の操作をすることで工場出荷時の状態にリセットすることができる．
 RN4020がシリアル通信でコントロールできなくなった場合に実施する．
@@ -49,8 +53,10 @@ $
 </pre>
 
 ## 使用方法
+以下の手順で接続する．
+接続中はmacOSのターミナルがTeCがシリアル通信の入出力に使用できる．
 
-### 接続先を一覧から選択する場合
+### 接続先を一覧から選択して接続する場合
 ターミナルで`blueterm`を実行する．
 <pre>
 $ blueterm                                 // 起動する
@@ -63,11 +69,12 @@ $ blueterm                                 // 起動する
 "MyName"へ接続しました．                   // 接続完了
 </pre>
 
-### 接続先を名前で指定する場合
+### 接続先を名前で指定して接続する場合
 <pre>
 $ blueterm MyName                          // 起動する
 "MyName"と名付けられたTeCに接続します．
 ~. : プログラム終了                        // 接続完了
+"sigemura"へ接続しました．
 </pre>
 
 ### blueterm 実行中に使用できるコマンド
