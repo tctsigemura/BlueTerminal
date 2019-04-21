@@ -18,6 +18,10 @@ if [ $# -le 0 ]; then
     /usr/local/bin/BlueTerminal
     stty -raw
 else
+    if [ `expr $1 : .\*` -gt 8 ]; then
+      echo "\"$1\" は間違った名前です（正しい名前は8文字以内です）．"
+      exit 1
+    fi
     echo "\"$1\"と名付けられたTeCに接続します．"
     stty raw
     /usr/local/bin/BlueTerminal "$1"
