@@ -40,11 +40,13 @@ $                                           // 設定完了
   ※ RN4020が正常に動作していればSF，SRに対して`AOK`と返ってくる．`R,1`の実行後，`CMD`が表示されると設定が終了する．
 
 ## インストール
+注意：
+以下は最新(Version 10.2.1)のXcodeがインストールされたmacOSでテストしてる．
+最新のXcodeをインストールしないと正常に動作しない可能性がある．
+
 `bin`ディレクトリに移動し`sudo make install`を実行する．
 `/usr/local/bin`ディレクトリに`blueterm`,`BlueTerminal`がインストールされる．
 
-注意：最新(Version 10.2.1)のXcodeがインストールされたmacOSでテストしています．
-（最新のXcodeが必要かもしれません．）
 <pre>
 $ cd bin
 $ sudo make install
