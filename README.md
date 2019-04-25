@@ -42,6 +42,9 @@ $                                           // 設定完了
 ## インストール
 `bin`ディレクトリに移動し`sudo make install`を実行する．
 `/usr/local/bin`ディレクトリに`blueterm`,`BlueTerminal`がインストールされる．
+
+注意：最新(Version 10.2.1)のXcodeがインストールされたmacOSでテストしています．
+（最新のXcodeが必要かもしれません．）
 <pre>
 $ cd bin
 $ sudo make install
