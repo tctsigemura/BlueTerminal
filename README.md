@@ -25,7 +25,7 @@ $                                           // 設定完了
 </pre>
 
 ## RN4020 初期設定（手動の場合）
-1. CoolTermをインストルする．（screenコマンドが使用できる人は不要）
+1. CoolTermをインストールする．（screenコマンドが使用できる人は不要）
 2. TeC7のジャンパをDEMO1に設定し，MacとUSBケーブルで接続する．　　
 3. CoolTermを起動し，以下のように設定する．
   <pre>  [options] → [Serial Port] → [Port] → TeC7を接続しているUSB Serialポートを選択
