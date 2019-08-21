@@ -79,7 +79,7 @@ $ blueterm                                 // 起動する
 $ blueterm MyName                          // 起動する
 "MyName"と名付けられたTeCに接続します．
 ~. : プログラム終了                        // 接続完了
-"sigemura"へ接続しました．
+"MyName"へ接続しました．
 </pre>
 
 ### blueterm 実行中に使用できるコマンド
