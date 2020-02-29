@@ -12,8 +12,6 @@ case "$1" in
 esac
 
 if [ $# -le 0 ]; then
-    echo "周辺のTeCをスキャンします．"
-    echo "接続するTeCを番号で選択して下さい．"
     stty raw
     /usr/local/bin/BlueTerminal
     stty -raw
@@ -22,11 +20,9 @@ else
       echo "\"$1\" は間違った名前です（正しい名前は8文字以内です）．"
       exit 1
     fi
-    echo "\"$1\"と名付けられたTeCに接続します．"
     stty raw
     /usr/local/bin/BlueTerminal "$1"
     stty -raw
 fi
 
-echo "${myname}を終了します．"
 exit 0
