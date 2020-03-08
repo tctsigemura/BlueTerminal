@@ -3,6 +3,6 @@ SUBDIRS:=src bin
 all:
 	$(foreach dir, $(SUBDIRS), $(MAKE) --directory=$(dir); )
 
-install:
+install: all
 	$(foreach dir, $(SUBDIRS), $(MAKE) --directory=$(dir) install; )
 

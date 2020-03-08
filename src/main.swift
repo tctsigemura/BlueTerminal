@@ -6,21 +6,39 @@ class BleTerminal {
     private let bleManager = BleManager()           // rn4020との通信管理
     private var deviceList = [String]()             // デバイスの一覧
     private var deviceName: String?                 // 接続するデバイスの名前
-    private let comFSM = ComFSM()                   // '~'コマンドを検出するFSM
-    private let numFSM = NumFSM()                   // 数値入力用のFSM
+    private let commandFSM = CommandFSM()           // '~'コマンドを検出するFSM
+    private let numberFSM = NumberFSM()             // 数値入力用のFSM
+    private let stringFSM = StringFSM()             // 文字列入力用のFSM
+    private var fileHandle: FileHandle?             // TWRITE中の入力ファイル
+    private var oldTec7: Bool=false                 // TeC7bc の場合
+
+    // アプリの状態
+    private enum State {
+        case opening                                // 接続準備中
+        case established                            // 通信中
+        case prompting                              // ファイル名入力中
+        case sending                                // TeCへフィアル転送中
+        case closing                                // 切断処理中
+    }
+    private var state = State.opening
+
+    // ターミナルにStringを出力する
+    private func writeToTerminal(_ str:String) {
+        stdioManager.write(str.data(using:.utf8)!)  // Dataに変換して出力
+    }
 
     // メッセージをターミナルに出力する
     private func writeMessage(_ str:String) {
-        stdioManager.write("\u{1b}[36m".data(using:.utf8)!) // 空色に変更
-        stdioManager.write("\(str)\r\n".data(using:.utf8)!) // メッセージ出力
-        stdioManager.write("\u{1b}[0m".data(using:.utf8)!)  // 元の色に戻す
+        writeToTerminal("\u{1b}[36m")               // 空色に変更
+        writeToTerminal("\(str)\r\n")               // メッセージ出力
+        writeToTerminal("\u{1b}[0m")                // 元の色に戻す
     }
 
     // デバイスの一覧を表示する
     private func printDeviceList(from start:Int, to end:Int) {
         if start <= end {
             for count in start ... end {
-                writeMessage("\(count + 1) : \(deviceList[count])")
+                writeMessage("\r\u{1b}[J\(count + 1) : \(deviceList[count])")
             }
         }
     }
@@ -36,33 +54,55 @@ class BleTerminal {
         return nil
     }
 
+    // 番号で指定してTeCに接続する
+    private func connect(to num:Int) {
+        writeToTerminal("\r\n")
+        if 1 <= num && num <= deviceList.count {
+            deviceName = deviceList[num - 1]
+            bleManager.connect(num - 1)
+        } else {
+            writeMessage("TeCの番号が不正です．")
+            printDeviceList(from:0, to:deviceList.count - 1)
+        }
+    }
+
+    // キーボードから終了の操作 "~." がされた
+    private func isEof(_ data:Data) -> Bool {
+        for char in data {
+            if commandFSM.feedChar(char) == .close {            // "~."
+                return true
+            }
+        }
+        return false
+    }
+
     // デバイス選択ステージに実行されキーボード入力でデバイスを選択する
     private func select() -> Bool {
         if let (start, end) = checkNewDevices() {
             printDeviceList(from:start, to:end)
         }
-        if let data = stdioManager.read() {
+        if stdioManager.isEof() {
+          return false
+        } else if let data = stdioManager.read() {
+            if isEof(data) {
+                return false
+            }
             for char in data {
-                if comFSM.feedChar(char) == .close {        // "~."
-                    return false
-                }
-                switch numFSM.feedChar(char) {
-                case .numeric:
-                    stdioManager.write(Data([char]))
-                case .delete:
-                    stdioManager.write("\u{08} \u{08}".data(using:.utf8)!)
+                switch numberFSM.feedChar(char) {
                 case .enter:
-                    stdioManager.write("\r\n".data(using:.utf8)!)
-                    if 1<=numFSM.number && numFSM.number<=deviceList.count {
-                        deviceName = deviceList[numFSM.number-1]
-                        bleManager.connect(numFSM.number-1)
-                    } else {
-                        writeMessage("TeCの番号が不正です．")
-                        printDeviceList(from:0, to:deviceList.count-1)
-                    }
-                default:
+                    let num = numberFSM.number
+            numberFSM.number = 0
+            connect(to: num)
+                default:   // numeric, delete
                     break
                 }
+            }
+        }
+        if bleManager.state == .scanning {
+            writeToTerminal("\r\u{1b}[J")                       // 行を消す
+            writeToTerminal("TeC No: ")
+            if numberFSM.number > 0 {
+                writeToTerminal("\(numberFSM.number)")
             }
         }
         return true
@@ -74,32 +114,115 @@ class BleTerminal {
             for i in start ... end {
                 if deviceList[i] == device {
                     bleManager.connect(i)
+                    break
                 }
             }
         }
-        if let data = stdioManager.read() {
-            for char in data {
-                if comFSM.feedChar(char) == .close {        // "~."
-                    return false
-                }
-            }
+        if let data = stdioManager.read()  {
+            return !isEof(data)
         }
         return true
     }
 
+    // デバイス選択ステージで実行される
+    private func opening() -> Bool {
+        if bleManager.state == .idle {
+        if (oldTec7) {
+                bleManager.write("MLDP\r\nApp:on\r\n".data(using:.utf8)!)
+            }
+            writeMessage("\"\(deviceName!)\"に接続しました．")
+            state = .established
+        } else if bleManager.state == .scanning {
+            if deviceName == nil {
+                return select()
+            } else {
+                return search(for:deviceName!)
+            }
+        } else if let data = stdioManager.read() {
+            return !isEof(data)
+        }
+        return true
+    }
+
+    // ファイルの送信を開始する
+    private func startSending() {
+        fileHandle=FileHandle(forReadingAtPath:stringFSM.string)
+        if let file = fileHandle {
+            let data = file.readDataToEndOfFile()
+            file.closeFile()
+            if data.count < 3 || 256 < data.count ||
+               data.count != data[1] + 2 {
+                writeMessage("\".bin\"ファイル形式エラー")
+                state = .established
+            } else {
+                let header = "\u{1b}TWRITE\r\n".data(using:.utf8)!
+                bleManager.write(header)
+                bleManager.write(data)
+                writeMessage("ファイル転送開始")
+                state = .sending
+            }
+        } else {
+            let str = stringFSM.string
+            writeMessage("\"\(str)\"を開くことができませんでした．")
+            state = .established
+        }
+    }
+
+    // プロンプトとファイル名を表示
+    private func printPrompt() {
+        writeToTerminal("\r\u{1b}[J")                           // 行を消す
+        writeToTerminal("BIN file: \(stringFSM.string)")
+    }
+
+    // 接続中に'~.'が入力されて接続を切断する
+    private func close() {
+        writeMessage("\r\n切断を開始します．")
+        if oldTec7 {
+            bleManager.write("ERR\r\nERR\r\n".data(using:.utf8)!)
+        }
+        bleManager.close()
+        state = .closing
+    }
+
+    // ファイル名入力ステージに実行される
+    private func prompting() {
+        if stdioManager.isEof() {
+          close()
+        } else if let data = stdioManager.read() {
+            for char in data {
+                switch stringFSM.feedChar(char) {
+                case .delete, .character:
+                    printPrompt()                       // 表示を更新する
+                case .enter:
+                    writeToTerminal("\r\n")
+                    if !stringFSM.string.hasSuffix(".bin") {
+                        stringFSM.string.append(".bin")
+                    }
+                    startSending()
+                case .nonCharacter:
+                    break
+                }
+            }
+        }
+    }
+
     // 通信ステージに実行される
-    private func communicate() -> Bool {
+    private func communicate() {
         if let data=bleManager.read() {
             stdioManager.write(data)
         }
         if stdioManager.isEof() {
-          return false
+            close()
         } else if let data = stdioManager.read() {
             for char in data {
-                switch comFSM.feedChar(char) {
+                switch commandFSM.feedChar(char) {
                 case .close:                                // "~."
-                    return false
-                case .cancel, .help, .command:
+                    close()
+                case .command:                              // "~:"
+                    writeToTerminal("\r\n")
+                    printPrompt()
+                    state = .prompting
+                case .cancel, .help:
                     bleManager.write("~".data(using:.utf8)!)
                     bleManager.write(Data([char]))
                 case .character:
@@ -109,16 +232,17 @@ class BleTerminal {
                 }
             }
         }
-        return true
     }
 
-    // アプリの状態
-    private enum State {
-        case opening                                       // 接続準備中
-        case established                                   // 通信中
-        case closing                                       // 切断処理中
+    // 通信が切れていないかチェックする
+    private func connectionError() -> Bool {
+        let bleState = bleManager.state
+        if bleState != .idle && bleState != .busy {
+            writeMessage("\r\n通信エラーが発生しました．")
+            return true
+        }
+        return false
     }
-    private var state = State.opening
 
     // 入出力イベントの発生を待つ，イベントが発生なしでも１秒に1度はループする
     // （Timer は runLoop.run() を終了させないので1秒でタイムアウトさせる）
@@ -128,52 +252,49 @@ class BleTerminal {
             let bleState = bleManager.state
             if bleState == .ready {
                 bleManager.startScan()
-            } else if bleState == .inOperation && state != .established {
-                bleManager.write("MLDP\r\nApp:on\r\n".data(using:.utf8)!)
-                writeMessage("\"\(deviceName!)\"に接続しました．")
-                state = .established
+            } else if bleState == .error {
+                writeMessage("\r\nエラーが発生しました．")
+                exit(1)
             }
             switch state {
-            case .established:
-                if bleState != .inOperation {
-                    writeMessage("\r\n通信中にエラーが発生しました．")
-                    break loop
-                } else if !communicate() {
-                    // キーボードで終了の操作がされた
-                    bleManager.write("ERR\r\nERR\r\n".data(using:.utf8)!)
-                    bleManager.close()
-                    state = .closing
-                }
             case .opening:
-                if bleState == .failed || bleState == .error {
-                    writeMessage("エラーが発生しました．")
+                if !opening() {
+                    writeMessage("\r\nプログラムを中止します．")
                     break loop
                 }
-                if deviceName != nil {             // 接続相手が指定されている
-                    if !search(for:deviceName!) {  // 自動的に選択
-                        writeMessage("プログラムを中止します．")
-                        break loop                 // キーボードで終了操作
-                    }
-                } else if !select() {              // キー操作で選択
-                    writeMessage("プログラムを中止します．")
-                    break loop                     // キーボードで終了操作
+            case .established:
+                if connectionError() {
+            exit(1)
+        }
+                communicate()
+            case .prompting:
+                if connectionError() {
+            exit(1)
+        }
+                prompting()
+            case .sending:
+                if connectionError() {
+            exit(1)
+        }
+                if bleState == .idle {
+                    writeMessage("ファイル送信完了")
+                    state = .established
                 }
             case .closing:
                 if bleState == .closed {
-                    writeMessage("\r\n切断が完了しました．")
-                    break loop
-                } else if bleState == .failed || bleState == .error {
-                    writeMessage("\r\n切断が失敗が失敗しました．")
+                    writeMessage("切断が完了しました．")
                     break loop
                 }
-            }  // switch
-        } // loop
-    }  // mainLoop
+            }
+        }
+    }
 
     // 起動時の処理を行ったあと mainLoop を呼び出す．
-    func run(_ name:String?) {
+    func run(_ name:String?, oldTec7 bcSwitch:Bool) {
         deviceName = name
+        oldTec7 = bcSwitch
         writeMessage("終了する時は「~.」を入力します．")
+        writeMessage("TeCに.BINファイルを書き込む時は「~:」を入力します．")
         if deviceName == nil {
             writeMessage("接続するTeCの番号を入力してください．")
         } else {
@@ -181,17 +302,26 @@ class BleTerminal {
         }
         mainLoop()
     }
-} // BleTerminal
+}
 
 // ここから実行が開始される
 let bleTerminal = BleTerminal()
 let argv = ProcessInfo.processInfo.arguments      // コマンド行引数
-switch argv.count {
+var bcSwitch = false                              // TeC7b,c
+var count = argv.count
+var index = 1
+if ( count == 2 || count == 3 ) && argv[index] == "-b" {
+  bcSwitch = true
+  index = index + 1
+  count = count - 1
+}
+
+switch count {
 case 1:                                           // 引数無しで起動された
-    bleTerminal.run(nil)
+    bleTerminal.run(nil, oldTec7:bcSwitch)
 case 2:                                           // 名前付きで起動された
-    bleTerminal.run(argv[1])
+    bleTerminal.run(argv[index], oldTec7:bcSwitch)
 default:                                          // 使い方が間違っている
-    print("Usage: blueTerminal [devicename]\r\n")
+    print("Usage: blueTerminal [-b] [devicename]\r\n")
     exit(1)
 }

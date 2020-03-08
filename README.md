@@ -2,9 +2,6 @@
 TeC7b以降に搭載されたMicrochip社のRN4020 Bluetooth Low Energy Moduleと
 MLDP(Microchip Low Energy Data Profile)を使用して通信するmacOS用のプログラム．
 RN4020（MLDP）用の一般的な通信ソフトとしても使用できる．
-（TeCに接続完了と切断を知らせる文字列が勝手に送信される．
-都合が悪い場合はプログラムを改造する必要がある．）
-
 
 ## RN4020 初期化（制御不能になった場合のみ）
 TeC7b(Tokuyama Educational Computer Ver.7b)以降に搭載されたRN4020は，
@@ -18,10 +15,10 @@ RN4020がシリアル通信でコントロールできなくなった場合に�
 1. TeC7のジャンパをDEMO1に設定し，MacとUSBケーブルで接続する．
 2. setupRN4020.sh を実行する
 ```
-$ ./setuRN4020.sh
+% ./setuRN4020.sh
 your name(Within 8 characters): MyName      // MyNameはRN4020に付ける名前
 Please wait 5 seconds...
-$                                           // 設定完了
+%                                           // 設定完了
 ```
 
 ## RN4020 初期設定（手動の場合）
@@ -52,23 +49,40 @@ R,1            // 再起動
 `/usr/local/bin`ディレクトリに`blueterm`,`BlueTerminal`がインストールされる．
 
 ```
-$ sudo make install
+% sudo make install
 Password:
+...
 install -d -m 755 /usr/local/bin
 install -m 755 blueterm /usr/local/bin
 install -m 755 BlueTerminal /usr/local/bin
-$
+%
 ```
 
 ## 使用方法
 以下の手順で接続する．
-接続中はmacOSのターミナルがTeCがシリアル通信の入出力に使用できる．
+macOSのターミナルを開き使用する．
+
+### ヘルプ
+コマンド行引数 -h を付けて起動すると使い方が表示される．
+
+```
+% blueterm -h
+使い方: blueterm [-b] [-c] [-h] [名前]
+        [-b]はTeC7b用のモードです．
+        [-c]はTeC7c用のモードです．
+        [-h]はこのメッセージを表示します．
+        [名前]はTeCの8文字以内の名前です．
+        [名前]が不明の場合は[名前]を省略してbluetermを起動します．
+        [名前]が省略されるとbluetermは周辺のTeCをスキャンします．
+        その場合は，番号でTeCを選択することができます．
+```
 
 ### 接続先を一覧から選択して接続する場合
 ターミナルで`blueterm`を実行する．
 ```
 $ blueterm                                 // 起動する
 終了する時は「~.」を入力します．
+TeCに.BINファイルを書き込む時は「~:」を入力します．
 接続するTeCの番号を入力してください．
 1: MyName                                  // 接続できる候補が表示される
 2: HisName
@@ -80,6 +94,7 @@ $ blueterm                                 // 起動する
 ```
 $ blueterm MyName                          // 起動する
 終了する時は「~.」を入力します．
+TeCに.BINファイルを書き込む時は「~:」を入力します．
 "MyName"を探します．
 "MyName"に接続しました．                   // 接続完了
 ```
@@ -88,4 +103,5 @@ $ blueterm MyName                          // 起動する
 blueterm を終了する．
 ```
   ~.         : プログラム終了
+  ~:         : .BINファイルをTeCに書き込む
 ```

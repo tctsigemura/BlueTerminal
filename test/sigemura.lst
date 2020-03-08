@@ -1,0 +1,29 @@
+ADR  CODE          Label   Instruction             Comment              Page(1)
+
+02                 SIOD    EQU     02H            
+03                 SIOS    EQU     03H            
+00                 
+00  17 00          START   LD      G1,#0          
+02  19 15          L0      LD      G2,DATA,G1     
+04  5B 00                  CMP     G2,#0          
+06                 ;       JZ      END
+06  A4 00                  JZ      START          
+08  C0 03          L1      IN      G0,SIOS        
+0A  63 80                  AND     G0,#80H        
+0C  A4 08                  JZ      L1             
+0E  CB 02                  OUT     G2,SIOD        
+10  37 01                  ADD     G1,#1          
+12  A0 02                  JMP     L0             
+14                 
+14  FF             END     HALT                   
+15                 
+15  54 6F 6B 75    DATA    DC      "Tokuyama Kousen" 
+19  79 61 6D 61 
+1D  20 4B 6F 75 
+21  73 65 6E 
+24  0D 0A                  DC      0DH,0AH        
+26  53 68 69 67            DC      "Shigemura"    
+2A  65 6D 75 72 
+2E  61 
+2F  0D 0A                  DC      0DH,0AH        
+31  00                     DC      00H            

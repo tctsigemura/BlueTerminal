@@ -1,0 +1,19 @@
+ADR  CODE          Label   Instruction             Comment              Page(1)
+
+00                 ;
+00                 ; ECHO プログラム
+00                 ;
+02                 SIOD    EQU     02H            
+03                 SIOS    EQU     03H            
+80                 TBIT    EQU     80H            
+40                 RBIT    EQU     40H            
+00                 
+00  C0 03          START   IN      G0,SIOS        
+02  63 40                  AND     G0,#RBIT       
+04  A4 00                  JZ      START          
+06  C0 02                  IN      G0,SIOD        
+08  C4 03          WAIT    IN      G1,SIOS        
+0A  67 80                  AND     G1,#TBIT       
+0C  A4 08                  JZ      WAIT           
+0E  C3 02                  OUT     G0,SIOD        
+10  A0 00                  JMP     START          
