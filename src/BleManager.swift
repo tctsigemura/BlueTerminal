@@ -17,6 +17,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     private var peripheral: CBPeripheral?          // 選択したデバイス
     private var characteristic: CBCharacteristic?  // データの出力先
     private var readData: Data?                    // 受信したデータ
+    private var writeData = Data()                 // 送信待ちデータ
     private var timer: Timer?                      // 接続待ちタイムアウト用
 
     enum State {                                   // BleManager の状態
@@ -24,11 +25,11 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         case ready                                 //   電源ON確認
         case scanning                              //   スキャン中
         case trying                                //   接続処理中
-        case failed                                //   接続失敗
-        case inOperation                           //   通信中
+        case busy                                  //   送信中
+        case idle                                  //   送信データ待ち
         case canceling                             //   切断待ち
-	case closed                                //   切断完了
-	case error                                 //   エラー発生
+        case closed                                //   切断完了
+        case error                                 //   エラー発生
     }
     var state: State = .initializing               //   初期化中から始める
 
@@ -43,10 +44,10 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
-	    state = .ready
-        default:
+            state = .ready
+        default: // poweredOff,resetting,unauthorized,unknown,unsupported
             NSLog("BleManager: unexpected state")
-	    state = .error
+            state = .error
         }
     }
 
@@ -71,7 +72,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     func centralManager(_ central: CBCentralManager,
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: Error?) {
-	state = .closed
+        state = .closed
     }
 
     // サービス発見時に呼ばれる
@@ -79,7 +80,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                     didDiscoverServices error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-	    state = .error
+            state = .error
             return
         }
         for service in peripheral.services! {
@@ -93,7 +94,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                     error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-	    state = .error
+            state = .error
             return
         }
         for characteristic in service.characteristics!
@@ -102,7 +103,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
             peripheral.setNotifyValue(true, for:characteristic)
             break
         }
-	state = .inOperation
+        state = .idle
     }
 
     // Notify開始／停止時に呼ばれる
@@ -111,7 +112,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
               error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-	    state = .error
+            state = .error
             return
         }
     }
@@ -122,16 +123,25 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
               error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-	    state = .error
+            state = .error
             return
         }
         if let data = characteristic.value {
-	    if readData != nil {
+            if readData != nil {
                 readData!.append(data)
-	    } else {
-	        readData = data
+            } else {
+                readData = data
             }
         }
+    }
+
+    // バッファーからキャラクタリスティックに書き込む
+    private func writeValueFromBuffer() {        // 一度に20バイトしか送れない
+        let count = min(writeData.count, 20)     // (BLEの仕様？)
+        peripheral?.writeValue(writeData.prefix(through:count-1),
+                for:characteristic!,
+                type: CBCharacteristicWriteType.withResponse)
+        writeData.removeSubrange(0..<count)
     }
 
     // データ書き込みが完了すると呼ばれる
@@ -140,8 +150,13 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                     error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-	    state = .error
-	    return
+            state = .error
+            return
+        }
+        if writeData.count > 0 {
+            writeValueFromBuffer()
+        } else {
+            state = .idle             // .busy => .idle
         }
     }
 
@@ -149,7 +164,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     func startScan() {
         centralManager.scanForPeripherals(
                         withServices:[target_service_uuid], options:nil)
-	state = .scanning
+        state = .scanning
     }
 
     // 接続可能なデバイスの一覧表を返す
@@ -164,22 +179,25 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     // デバイスに接続する関数
     func connect(_ row : Int) {                // row 番目のデバイスに接続する
         guard 0 <= row && row < peripherals.count else {
-	    return                             // 番号間違えなら無視
-	}
+            return                             // 番号間違えなら無視
+        }
         peripheral = peripherals[row]          // 選択したデバイスを記録
         centralManager.stopScan()              // デバイスの検出を終了
         centralManager.connect(peripheral!, options:nil)  // 接続開始
         peripheral!.delegate = self
-	timer = Timer.scheduledTimer(timeInterval:3.0, target:self,
+        timer = Timer.scheduledTimer(timeInterval:3.0, target:self,
                        selector:#selector(BleManager.timeOut),
-		       userInfo:nil, repeats:false)
-	state = .trying
+                       userInfo:nil, repeats:false)
+        state = .trying
     }
 
     // デバイスにデータを送信する
     func write(_ data : Data) {
-            peripheral?.writeValue(data, for:characteristic!,
-                type: CBCharacteristicWriteType.withResponse)
+        writeData.append(data)
+        if state != .busy && data.count > 0 {
+            writeValueFromBuffer()
+            state = .busy
+        }
     }
 
     // 受信データを取り出す
@@ -193,14 +211,14 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     func close() {
         peripheral?.setNotifyValue(false, for:characteristic!)
         centralManager.cancelPeripheralConnection(peripheral!)
-	timer = Timer.scheduledTimer(timeInterval:3.0, target:self,
+        timer = Timer.scheduledTimer(timeInterval:3.0, target:self,
                        selector:#selector(BleManager.timeOut),
-		       userInfo:nil, repeats:false)
-	state = .canceling
+               userInfo:nil, repeats:false)
+        state = .canceling
     }
 
     // タイマーから呼ばれれる
     @objc func timeOut() {                     // @objc: Objective-C が呼ぶ
-        state = .failed                        // runLoop は終わらない（仕様）
+        state = .error                         // runLoop は終わらない（仕様）
     }
 } // BleManager

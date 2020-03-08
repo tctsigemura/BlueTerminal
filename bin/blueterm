@@ -1,10 +1,17 @@
 #!/bin/sh
 
 myname=`basename $0`
+bc=""
 
 case "$1" in
--*) echo "使い方: ${myname} [-h] [名前]"
-    echo "        [名前]はTeCにつけてある8文字以内の名前です．"
+-[bc])
+    bc="-b"       # TeC7b,c モード
+    shift;;
+-*) echo "使い方: ${myname} [-b] [-c] [-h] [名前]"
+    echo "        [-b]はTeC7b用のモードです．"
+    echo "        [-c]はTeC7c用のモードです．"
+    echo "        [-h]はこのメッセージを表示します．"
+    echo "        [名前]はTeCの8文字以内の名前です．"
     echo "        [名前]が不明の場合は[名前]を省略して${myname}を起動します．"
     echo "        [名前]が省略されると${myname}は周辺のTeCをスキャンします．"
     echo "        その場合は，番号でTeCを選択することができます．"
@@ -13,7 +20,7 @@ esac
 
 if [ $# -le 0 ]; then
     stty raw
-    /usr/local/bin/BlueTerminal
+    /usr/local/bin/BlueTerminal ${bc}
     stty -raw
 else
     if [ `expr $1 : .\*` -gt 8 ]; then
@@ -21,7 +28,7 @@ else
       exit 1
     fi
     stty raw
-    /usr/local/bin/BlueTerminal "$1"
+    /usr/local/bin/BlueTerminal  ${bc} "$1"
     stty -raw
 fi
 
