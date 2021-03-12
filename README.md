@@ -48,7 +48,7 @@ TeC7b(Tokuyama Educational Computer Ver.7b)以降に搭載されたRN4020は， 
 
 ## インストール
 
-注意： 以下は最新(Version 11.5)のXcodeがインストールされたmacOS(10.15.5)でテストしてる． 最新のXcodeをインストールしないと正常に動作しない可能性がある．
+注意： 以下は最新(Version 12.4)のXcodeがインストールされたmacOS(11.2.2)でテストしてる． 最新のXcodeをインストールしないと正常に動作しない可能性がある．
 
 配布物のディレクトリに移動し`sudo make install`を実行する． `/usr/local/bin`ディレクトリに`blueterm`,`BlueTerminal`がインストールされる．
 
@@ -93,7 +93,7 @@ TeCに.BINファイルを書き込む時は「~:」を入力します．
 接続するTeCの番号を入力してください．
 1: MyName                                  // 接続できる候補が表示される
 2: HisName
-1                                          // 接続先を番号で選択する
+TeC No: 1                                  // 接続先を番号で選択する
 "MyName"へ接続しました．                   // 接続完了
 ```
 
