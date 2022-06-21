@@ -8,7 +8,8 @@ TeC7b(Tokuyama Educational Computer Ver.7b)以降に搭載されたRN4020は， 
 
 1. TeC7のJ1ピンにジャンパを二本同時に横向きに差し込む．
 2. TeC7に電源を投入し10秒待つ．
-3. 電源を切断する．
+3. 電源を切断する．<br>
+（電源を切断しないで，下の「RN4020初期設定」の「2. setupRN4020.shを実行する」に進んでも良い）
 
 ## RN4020 初期設定（スクリプト使用の場合）
 
@@ -16,7 +17,7 @@ TeC7b(Tokuyama Educational Computer Ver.7b)以降に搭載されたRN4020は， 
 2. setupRN4020.sh を実行する
 
   ```
-  % ./setuRN4020.sh
+  % ./setupRN4020.sh
   your name(Within 8 characters): MyName      // MyNameはRN4020に付ける名前
   Please wait 5 seconds...
   %                                           // 設定完了
