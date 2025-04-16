@@ -42,13 +42,28 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
 
     // セントラルマネージャの状態が変化すると呼ばれる
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        var name = ""
         switch central.state {
+        case .poweredOff:
+            state = .error
+            name = "poweredOff"
         case .poweredOn:
             state = .ready
-        default: // poweredOff,resetting,unauthorized,unknown,unsupported
-            NSLog("BleManager: unexpected state")
+            name = "poweredOn"
+        case .resetting:
             state = .error
+            name = "resetting"
+        case .unauthorized:
+            state = .error
+            name = "unauthorized"
+        case .unknown:
+            state = .error
+            name = "unknown"
+        default: // poweredOff,resetting,unauthorized,unknown,unsupported
+            state = .error
+            name = "unsupported"
         }
+        NSLog("BleManager: state(\(name))")
     }
 
     // ペリフェラルを発見すると呼ばれる
