@@ -49,7 +49,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
             name = "poweredOff"
         case .poweredOn:
             state = .ready
-            name = "poweredOn"
+            //name = "poweredOn"
         case .resetting:
             state = .error
             name = "resetting"
@@ -59,11 +59,13 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         case .unknown:
             state = .error
             name = "unknown"
-        default: // poweredOff,resetting,unauthorized,unknown,unsupported
+        default:
             state = .error
             name = "unsupported"
         }
-        NSLog("BleManager: state(\(name))")
+        if (name != "") {
+          NSLog("BleManager: \(name)")
+        }
     }
 
     // ペリフェラルを発見すると呼ばれる
