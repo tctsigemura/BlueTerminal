@@ -264,8 +264,8 @@ class BleTerminal {
                 }
             case .established:
                 if connectionError() {
-            exit(1)
-        }
+                  exit(1)
+                }
                 communicate()
             case .prompting:
                 if connectionError() {
