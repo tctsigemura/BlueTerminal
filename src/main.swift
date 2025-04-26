@@ -1,5 +1,6 @@
 // main.swift
 import Foundation
+import CoreBluetooth
 
 class BleTerminal {
     private let stdioManager = StdioManager()       // 標準入出力管理
@@ -34,6 +35,13 @@ class BleTerminal {
         writeToTerminal("\u{1b}[0m")                // 元の色に戻す
     }
 
+    // メッセージをターミナルに出力する
+    private func writeError(_ str:String) {
+        writeToTerminal("\u{1b}[31m")               // 赤色に変更
+        writeToTerminal("\(str)\r\n")               // メッセージ出力
+        writeToTerminal("\u{1b}[0m")                // 元の色に戻す
+    }
+
     // デバイスの一覧を表示する
     private func printDeviceList(from start:Int, to end:Int) {
         if start <= end {
@@ -61,7 +69,7 @@ class BleTerminal {
             deviceName = deviceList[num - 1]
             bleManager.connect(num - 1)
         } else {
-            writeMessage("TeCの番号が不正です．")
+            writeError("TeCの番号が不正です．")
             printDeviceList(from:0, to:deviceList.count - 1)
         }
     }
@@ -98,7 +106,7 @@ class BleTerminal {
                 }
             }
         }
-        if bleManager.state == .scanning {
+        if case .scanning = bleManager.state {
             writeToTerminal("\r\u{1b}[J")                       // 行を消す
             writeToTerminal("TeC No: ")
             if numberFSM.number > 0 {
@@ -126,13 +134,13 @@ class BleTerminal {
 
     // デバイス選択ステージで実行される
     private func opening() -> Bool {
-        if bleManager.state == .idle {
+        if case .idle = bleManager.state {
         if (oldTec7) {
                 bleManager.write("MLDP\r\nApp:on\r\n".data(using:.utf8)!)
             }
             writeMessage("\"\(deviceName!)\"に接続しました．")
             state = .established
-        } else if bleManager.state == .scanning {
+        } else if case .scanning = bleManager.state {
             if deviceName == nil {
                 return select()
             } else {
@@ -152,7 +160,7 @@ class BleTerminal {
             file.closeFile()
             if data.count < 3 || 256 < data.count ||
                data.count != data[1] + 2 {
-                writeMessage("\".bin\"ファイル形式エラー")
+                writeError("\".bin\"ファイル形式エラー")
                 state = .established
             } else {
                 let header = "\u{1b}TWRITE\r\n".data(using:.utf8)!
@@ -163,7 +171,7 @@ class BleTerminal {
             }
         } else {
             let str = stringFSM.string
-            writeMessage("\"\(str)\"を開くことができませんでした．")
+            writeError("\"\(str)\"を開くことができませんでした．")
             state = .established
         }
     }
@@ -236,12 +244,32 @@ class BleTerminal {
 
     // 通信が切れていないかチェックする
     private func connectionError() -> Bool {
-        let bleState = bleManager.state
-        if bleState != .idle && bleState != .busy {
-            writeMessage("\r\n通信エラーが発生しました．")
+        switch bleManager.state {
+        case .idle, .busy:
+            return false
+        default:
+            writeError("\r\n通信エラーが発生しました．")
             return true
         }
-        return false
+    }
+
+    // BelManager でエラーが発生した際にエラーメッセージを表示する
+    private func bleError(_ state:CBManagerState?) {
+        switch state {
+        case .poweredOff:
+            writeError("""
+                       \r\nBluetoothの電源がOFFになっています．\r
+                       環境設定アプリでBluetoothをONにしてください．
+                       """)
+        case .unauthorized:
+            writeError("""
+                       \r\nBluetoothにアクセスする権限がありません．\r
+                       環境設定アプリの「プライバシーとセキュリティ」で\r
+                       「ターミナル」に権限を与えてください．
+                       """)
+        default:
+            writeError("\r\n原因不明のエラーが発生しました．")
+        }
     }
 
     // 入出力イベントの発生を待つ，イベントが発生なしでも１秒に1度はループする
@@ -250,12 +278,16 @@ class BleTerminal {
         let runLoop = RunLoop.main
         loop: while runLoop.run(mode:RunLoop.Mode.default, before:Date()+1.0) {
             let bleState = bleManager.state
-            if bleState == .ready {
+            switch bleState {
+            case .ready:
                 bleManager.startScan()
-            } else if bleState == .error {
-                writeMessage("\r\nエラーが発生しました．")
+            case let .error(substate):
+                bleError(substate)
                 exit(1)
+            default:
+                break // やることなし
             }
+
             switch state {
             case .opening:
                 if !opening() {
@@ -269,19 +301,19 @@ class BleTerminal {
                 communicate()
             case .prompting:
                 if connectionError() {
-            exit(1)
-        }
+                  exit(1)
+                }
                 prompting()
             case .sending:
                 if connectionError() {
-            exit(1)
-        }
-                if bleState == .idle {
+                  exit(1)
+                }
+                if case .idle = bleState {
                     writeMessage("ファイル送信完了")
                     state = .established
                 }
             case .closing:
-                if bleState == .closed {
+                if case .closed = bleState {
                     writeMessage("切断が完了しました．")
                     break loop
                 }

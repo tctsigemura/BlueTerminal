@@ -29,7 +29,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         case idle                                  //   送信データ待ち
         case canceling                             //   切断待ち
         case closed                                //   切断完了
-        case error                                 //   エラー発生
+        case error(CBManagerState?)                //   エラー発生
     }
     var state: State = .initializing               //   初期化中から始める
 
@@ -42,29 +42,11 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
 
     // セントラルマネージャの状態が変化すると呼ばれる
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        var name = ""
         switch central.state {
-        case .poweredOff:
-            state = .error
-            name = "poweredOff"
         case .poweredOn:
             state = .ready
-            //name = "poweredOn"
-        case .resetting:
-            state = .error
-            name = "resetting"
-        case .unauthorized:
-            state = .error
-            name = "unauthorized"
-        case .unknown:
-            state = .error
-            name = "unknown"
         default:
-            state = .error
-            name = "unsupported"
-        }
-        if (name != "") {
-          NSLog("BleManager: \(name)")
+            state = .error(central.state)
         }
     }
 
@@ -97,7 +79,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                     didDiscoverServices error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-            state = .error
+            state = .error(nil)
             return
         }
         for service in peripheral.services! {
@@ -111,7 +93,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                     error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-            state = .error
+            state = .error(nil)
             return
         }
         for characteristic in service.characteristics!
@@ -129,7 +111,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
               error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-            state = .error
+            state = .error(nil)
             return
         }
     }
@@ -140,7 +122,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
               error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-            state = .error
+            state = .error(nil)
             return
         }
         if let data = characteristic.value {
@@ -167,7 +149,7 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                     error: Error?) {
         guard error == nil else {
             NSLog("BleManager: %@", error.debugDescription)
-            state = .error
+            state = .error(nil)
             return
         }
         if writeData.count > 0 {
@@ -211,7 +193,9 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     // デバイスにデータを送信する
     func write(_ data : Data) {
         writeData.append(data)
-        if state != .busy && data.count > 0 {
+        if case .busy = state {
+            return
+        } else if data.count > 0 {
             writeValueFromBuffer()
             state = .busy
         }
@@ -236,6 +220,6 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
 
     // タイマーから呼ばれれる
     @objc func timeOut() {                     // @objc: Objective-C が呼ぶ
-        state = .error                         // runLoop は終わらない（仕様）
+        state = .error(nil)                    // runLoop は終わらない（仕様）
     }
 } // BleManager
