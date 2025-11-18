@@ -74,7 +74,6 @@ class StringFSM {
     private var previous = Output.nonCharacter
     private var utf8Data = Data()                  // 入力したUTF8データ
     var string = String()                          // 入力した文字列
-    var lastCharacter = Character(" ")             // 最後に入力した文字
 
     func feedChar(_ character:UInt8) -> Output {
         let charCode : Int = Int(character)
@@ -93,7 +92,6 @@ class StringFSM {
             utf8Data.append(Data([character]))
             if let str = String(data:utf8Data, encoding:String.Encoding.utf8) {
                string.append(str)
-               lastCharacter = Character(str)
                utf8Data = Data()
                previous = .character
             } else {
@@ -104,11 +102,5 @@ class StringFSM {
             previous = .nonCharacter
         }
         return previous
-    }
-
-    func read() -> String {
-        let str = string
-        string = String()
-        return str
     }
 } // StringFSM
