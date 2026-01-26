@@ -55,7 +55,8 @@ class BleManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                         didDiscover peripheral: CBPeripheral,
                         advertisementData: [String : Any],
                         rssi RSSI: NSNumber) {
-        if !peripherals.contains(peripheral) {
+        if !peripherals.contains(peripheral)
+           && peripheral.name != nil {
             peripherals.append(peripheral)
         }
     }
